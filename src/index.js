@@ -1,4 +1,4 @@
-import Component from './component'
+import Component, { createNewComponentForEl, evaluateProps } from './component'
 import { domReady, isTesting } from './utils'
 
 const Alpine = {
@@ -76,13 +76,25 @@ const Alpine = {
 
     initializeComponent: function (el) {
         if (! el.__x) {
-            el.__x = new Component(el)
+            createNewComponentForEl(
+                el,
+                evaluateProps(el, null /*parentComponent*/)
+            );
         }
     },
 
     clone: function (component, newEl) {
         if (! newEl.__x) {
-            newEl.__x = new Component(newEl, component.getUnobservedData())
+            createNewComponentForEl(
+                newEl,
+                component.$el ? evaluateProps(
+                    component.$el,
+                    component.$el.parentNode
+                        ? component.$el.parentNode.__x
+                        : null /*parentComponent*/
+                ) : null /*props*/,
+                component.getUnobservedData()
+            );
         }
     }
 }

@@ -224,6 +224,57 @@
                 </tr>
 
                 <tr>
+                    <td>Component with Props</td>
+                    <td>
+                        <div
+                            x-data="{stateFromProp1: $props.prop1}"
+                            x-props="{prop1: 'SomeVal'}"
+                        >
+                            <div>
+                                state from prop:&nbsp;
+                                <b><span x-text="stateFromProp1"></span></b>
+                            </div>
+                            <div>
+                                prop:&nbsp;<b
+                                    ><span x-text="$props.prop1"></span
+                                ></b>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Nested Components with Props</td>
+                    <td>
+                        <div x-data="{ foo: { bar: 'baz' } }">
+                            Parent Component: <input type="text" x-model="foo.bar" />
+                            <div
+                                x-data="componentWithProps($props)"
+                                x-props="{prop1: foo.bar}"
+                            >
+                            <p></p>
+                                Nested Component: 
+                                <div>
+                                    &nbsp;Initial prop:
+                                    <span x-text="stateFromProp1"></span>
+                                </div>
+                                <div>
+                                    &nbsp;latest prop:
+                                    <span x-text="$props.prop1"></span>
+                                </div>
+                            </div>
+                            <script>
+                                function componentWithProps(initialProps) {
+                                    return {
+                                        stateFromProp1: initialProps.prop1
+                                    }
+                                }
+                            </script>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
                     <td>x-for</td>
                     <td>
                         <div x-data="{ items: ['foo', 'bar'], foo: 'bar' }">
