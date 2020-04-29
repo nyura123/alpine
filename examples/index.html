@@ -14,6 +14,7 @@
             .ease-out { transition-timing-function: cubic-bezier(0, 0, 0.2, 1); }
         </style>
 
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/0.5.1/tailwind.css">
         <script src="/dist/alpine.js" defer></script>
     </head>
     <body>
@@ -350,6 +351,99 @@
                                 </div>
                             </div>
                         </div>
+                    </td>
+                </tr>
+                
+               
+                <tr>
+                    <td valign='top'>Accordion using prop callbacks</td>
+                    <td valign='top'>
+                        <div style="min-height:300px" class='flex flex-col justify-start' x-data="collapser('top', false)" x-init="init()">
+                            <div class="flex justify-between border-b-2"><div>MENU</div><button x-on:click="toggle()">toggle</button></div>
+                            <div x-bind:style="calcStyle()">
+                                <div x-ref="child">
+                                    <div>
+                                        <div class="border-b-2">&nbsp;ITEM1</div>
+                                        <div x-data="collapser('first', false)" x-init="init()" x-props="{updateParentHeight: updateHeightFromChild.bind($data)}">
+                                            <div class="flex justify-between border-b-2"><div>&nbsp;SUBMENU</div><button x-on:click="toggle()">toggle</button></div>
+                                            <div x-bind:style="calcStyle()">
+                                                <div x-ref="child">
+                                                    <div class="border-b-2">&nbsp;&nbsp;SUBMENU ITEM1</div>
+                                                    <div x-data="collapser('second', false)" x-init="init()" x-props="{updateParentHeight: updateHeightFromChild.bind($data)}">
+                                                        <div class="flex justify-between border-b-2"><div>&nbsp;&nbsp;SUB-SUBMENU_1</div><button x-on:click="toggle()">toggle</button></div>
+                                                        <div x-bind:style="calcStyle()">
+                                                            <div x-ref="child">
+                                                                <div class="border-b-2">
+                                                                    &nbsp;&nbsp;&nbsp;&nbsp;SUB-SUBMENU_1 ITEM1
+                                                                </div>
+                                                                <div class="border-b-2">
+                                                                    &nbsp;&nbsp;&nbsp;&nbsp;SUB-SUBMENU_1 ITEM2
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="border-b-2">&nbsp;&nbsp;SUBMENU ITEM2</div>
+                                                    <div class="border-b-2">&nbsp;&nbsp;SUBMENU ITEM3</div>
+                                                    <div x-data="collapser('third', false)" x-init="init()" x-props="{updateParentHeight: updateHeightFromChild.bind($data)}">
+                                                        <div class="flex justify-between border-b-2"><div>&nbsp;&nbsp;SUB-SUBMENU_2</div><button x-on:click="toggle()">toggle</button></div>
+                                                        <div x-bind:style="calcStyle()">
+                                                            <div x-ref="child">
+                                                                <div class="border-b-2">
+                                                                    &nbsp;&nbsp;&nbsp;&nbsp;SUB-SUBMENU_2 ITEM1
+                                                                </div>
+                                                                <div class="border-b-2">
+                                                                    &nbsp;&nbsp;&nbsp;&nbsp;SUB-SUBMENU_2 ITEM2
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="border-b-2">
+                                        &nbsp;ITEM2
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <script>
+                            const publishedHeights = new Map() // like React's refs
+                            function collapser(name, initialExpanded=true) {
+                                return {
+                                    name: name,
+                                    version: 1,
+                                    shouldTransition: false,
+                                    height: 0,
+                                    init() {
+                                        this.height = this.$refs.child.offsetHeight;
+                                        this.publishHeightToParent();
+                                    },
+                                    toggle() {
+                                        this.expanded = !this.expanded
+                                        this.publishHeightToParent()
+                                    },
+                                    updateHeightFromChild(heightDelta, from) {
+                                      this.height += heightDelta;
+                                      this.publishHeightToParent()
+                                    },
+                                    publishHeightToParent() {
+                                        const publishedHeight = publishedHeights[this.name] || 0;
+                                        const newHeightToPublish = this.expanded ? this.height : 0;
+                                        const func = this.$props && this.$props.updateParentHeight;
+                                        if (newHeightToPublish !== publishedHeight) {
+                                            publishedHeight && func && func(-publishedHeight, this.name)
+                                            newHeightToPublish && func && func(newHeightToPublish, this.name)
+                                            publishedHeights[this.name] = newHeightToPublish
+                                        }
+                                    },
+                                    expanded: initialExpanded,
+                                    calcStyle() {
+                                        return `transition: all 300ms; max-height: ${(this.expanded ? this.height : '0')}px; overflow: hidden`
+                                    }
+                                }
+                            }
+                        </script>
                     </td>
                 </tr>
 
