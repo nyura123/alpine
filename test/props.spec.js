@@ -101,13 +101,10 @@ test('child component supports multiple levels of nesting with explicit props', 
 test("props work with x-for", async () => {
     document.body.innerHTML = `
      <div x-data="{items: ['item1', 'item2']}">
-       <div>WEIRD</div>
        <template x-for="(item, index) in items" :key="item">
-         <div>
             <div x-data="{hello:'world'}" x-props="{item: item}">
                 <span x-bind:id="'span_'+$props.item" x-text="$props.item"></span>
             </div>
-          </div>
         </template>
      </div>
     `;

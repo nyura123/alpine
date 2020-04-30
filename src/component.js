@@ -159,7 +159,7 @@ export default class Component {
     walkAndSkipNestedComponents(el, callback, initializeComponentCallback = () => {}) {
         walk(el, el => {
             // We've hit a component.
-            if (el.hasAttribute('x-data')) {
+            if (el.hasAttribute('x-data') && !this.shouldSkipForLoopEl(el)) {
                 // If it's not the current one.
                 if (! el.isSameNode(this.$el)) {
                     // Initialize it if it's not.
@@ -180,6 +180,10 @@ export default class Component {
 
             return callback(el)
         })
+    }
+    
+    shouldSkipForLoopEl(el) {
+        return el.__x_for_key !== undefined && !el.isSameNode(this.$el)
     }
 
     initializeElements(rootEl, extraVars = () => {}) {
@@ -214,7 +218,7 @@ export default class Component {
     updateElements(rootEl, extraVars = () => {}) {
         this.walkAndSkipNestedComponents(rootEl, el => {
             // Don't touch spawns from for loop (and check if the root is actually a for loop in a parent, don't skip it.)
-            if (el.__x_for_key !== undefined && ! el.isSameNode(this.$el)) return false
+            if (this.shouldSkipForLoopEl(el)) return false
 
             this.updateElement(el, extraVars)
         }, (el, props) => {
