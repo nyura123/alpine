@@ -397,7 +397,7 @@ export default class Component {
                     mutations[i].addedNodes.forEach(node => {
                         if (node.nodeType !== 1 || node.__x_inserted_me) return
 
-                        if (node.matches('[x-data]')) {
+                        if (node.matches('[x-data]') && !this.shouldSkipForLoopEl(node)) {
                             createNewComponentForEl(node, evaluateProps(node, this))
                             return
                         }
