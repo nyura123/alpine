@@ -17,7 +17,7 @@ export function handleForDirective(component, templateEl, expression, initialUpd
         let nextEl = currentEl.nextElementSibling
         
         // for x-props -- add extra scope for evaluating props
-        component.__x_extra_scope = {prevScope, ...iterationScopeVariables}
+        component.__x_extra_scope = {...prevScope, ...iterationScopeVariables}
 
         // If there's no previously x-for processed element ahead, add one.
         if (! nextEl || nextEl.__x_for_key === undefined) {
