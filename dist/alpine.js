@@ -390,16 +390,13 @@
   function handleForDirective(component, templateEl, expression, initialUpdate, extraVars) {
     warnIfNotTemplateTag(templateEl);
     let iteratorNames = parseForExpression(expression);
-    let items = evaluateItemsAndReturnEmptyIfXIfIsPresentAndFalseOnElement(component, templateEl, iteratorNames, extraVars);
-    const prevScope = component.__x_extra_scope; // As we walk the array, we'll also walk the DOM (updating/creating as we go).
+    let items = evaluateItemsAndReturnEmptyIfXIfIsPresentAndFalseOnElement(component, templateEl, iteratorNames, extraVars); // As we walk the array, we'll also walk the DOM (updating/creating as we go).
 
     let currentEl = templateEl;
     items.forEach((item, index) => {
       let iterationScopeVariables = getIterationScopeVariables(iteratorNames, item, index, items, extraVars());
       let currentKey = generateKeyForIteration(component, templateEl, index, iterationScopeVariables);
-      let nextEl = currentEl.nextElementSibling; // for x-props -- add extra scope for evaluating props
-
-      component.__x_extra_scope = _objectSpread2({}, prevScope, {}, iterationScopeVariables); // If there's no previously x-for processed element ahead, add one.
+      let nextEl = currentEl.nextElementSibling; // If there's no previously x-for processed element ahead, add one.
 
       if (!nextEl || nextEl.__x_for_key === undefined) {
         nextEl = addElementInLoopAfterCurrentEl(templateEl, currentEl); // And transition it in if it's not the first page load.
@@ -423,7 +420,6 @@
       currentEl = nextEl;
       currentEl.__x_for_key = currentKey;
     });
-    component.__x_extra_scope = prevScope;
     removeAnyLeftOverElementsFromPreviousUpdate(currentEl);
   } // This was taken from VueJS 2.* core. Thanks Vue!
 
@@ -1285,10 +1281,10 @@
   function createNewComponentForEl(el, props, seedDataForCloning = null) {
     el.__x = new Component(el, seedDataForCloning, props);
   }
-  function evaluateProps(el, parentComponent) {
+  function evaluateProps(el, parentComponent, extraVars = () => {}) {
     if (el.hasAttribute("x-props")) {
       // evaluate props in context of parentComponent if present, otherwise without any context
-      const props = parentComponent ? parentComponent.evaluateReturnExpression(el, el.getAttribute("x-props"), () => parentComponent.__x_extra_scope) : saferEval(el.getAttribute("x-props"), {}
+      const props = parentComponent ? parentComponent.evaluateReturnExpression(el, el.getAttribute("x-props"), extraVars) : saferEval(el.getAttribute("x-props"), {}
       /*context*/
       );
       return props;
@@ -1407,7 +1403,7 @@
       });
     }
 
-    walkAndSkipNestedComponents(el, callback, initializeComponentCallback = () => {}) {
+    walkAndSkipNestedComponents(el, callback, initializeComponentCallback = () => {}, extraVars = () => {}) {
       walk(el, el => {
         // We've hit a component.
         if (el.hasAttribute('x-data') && !this.shouldSkipForLoopEl(el)) {
@@ -1415,10 +1411,10 @@
           if (!el.isSameNode(this.$el)) {
             // Initialize it if it's not.
             if (!el.__x) {
-              initializeComponentCallback(el, evaluateProps(el, this));
+              initializeComponentCallback(el, evaluateProps(el, this, extraVars));
             } else {
               // otherwise, mutate el.$data with new $props to cause child DOM to update
-              el.__x.setProps(evaluateProps(el, this));
+              el.__x.setProps(evaluateProps(el, this, extraVars));
             } // Now we'll let that sub-component deal with itself.
 
 
@@ -1443,7 +1439,7 @@
         this.initializeElement(el, extraVars);
       }, (el, props) => {
         createNewComponentForEl(el, props);
-      });
+      }, extraVars);
       this.executeAndClearRemainingShowDirectiveStack();
       this.executeAndClearNextTickStack(rootEl);
     }
@@ -1466,7 +1462,7 @@
         this.updateElement(el, extraVars);
       }, (el, props) => {
         createNewComponentForEl(el, props);
-      });
+      }, extraVars);
       this.executeAndClearRemainingShowDirectiveStack();
       this.executeAndClearNextTickStack(rootEl);
     }
