@@ -399,9 +399,7 @@
       let currentKey = generateKeyForIteration(component, templateEl, index, iterationScopeVariables);
       let nextEl = currentEl.nextElementSibling; // for x-props -- add extra scope for evaluating props
 
-      component.__x_extra_scope = _objectSpread2({
-        prevScope
-      }, iterationScopeVariables); // If there's no previously x-for processed element ahead, add one.
+      component.__x_extra_scope = _objectSpread2({}, prevScope, {}, iterationScopeVariables); // If there's no previously x-for processed element ahead, add one.
 
       if (!nextEl || nextEl.__x_for_key === undefined) {
         nextEl = addElementInLoopAfterCurrentEl(templateEl, currentEl); // And transition it in if it's not the first page load.
@@ -1367,7 +1365,9 @@
 
     setProps(props) {
       // TODO: performnce optimization to only set $props if any key's val changed
-      this.$data.$props = props;
+      if (props) {
+        this.$data.$props = props;
+      }
     }
 
     wrapDataInObservable(data, props) {
@@ -1410,7 +1410,7 @@
     walkAndSkipNestedComponents(el, callback, initializeComponentCallback = () => {}) {
       walk(el, el => {
         // We've hit a component.
-        if (el.hasAttribute('x-data')) {
+        if (el.hasAttribute('x-data') && !this.shouldSkipForLoopEl(el)) {
           // If it's not the current one.
           if (!el.isSameNode(this.$el)) {
             // Initialize it if it's not.
@@ -1428,6 +1428,10 @@
 
         return callback(el);
       });
+    }
+
+    shouldSkipForLoopEl(el) {
+      return el.__x_for_key !== undefined && !el.isSameNode(this.$el);
     }
 
     initializeElements(rootEl, extraVars = () => {}) {
@@ -1458,7 +1462,7 @@
     updateElements(rootEl, extraVars = () => {}) {
       this.walkAndSkipNestedComponents(rootEl, el => {
         // Don't touch spawns from for loop (and check if the root is actually a for loop in a parent, don't skip it.)
-        if (el.__x_for_key !== undefined && !el.isSameNode(this.$el)) return false;
+        if (this.shouldSkipForLoopEl(el)) return false;
         this.updateElement(el, extraVars);
       }, (el, props) => {
         createNewComponentForEl(el, props);
