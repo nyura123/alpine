@@ -107,6 +107,7 @@ export default class Component {
     }
 
     setProps(props) {
+        // TODO: performnce optimization to only set $props if any key's val changed
         this.$data.$props = props
     }
 

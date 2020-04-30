@@ -89,18 +89,12 @@ const Alpine = {
                 newEl,
                 component.$el ? evaluateProps(
                     component.$el,
-                    getParentComponent(component)
+                    null
                 ) : null /*props*/,
                 component.getUnobservedData()
             );
         }
     }
-}
-
-function getParentComponent(component) {
-    return component && component.$el && component.$el.parentNode
-        ? component.$el.parentNode.__x
-        : null 
 }
 
 if (! isTesting()) {
