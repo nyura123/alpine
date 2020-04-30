@@ -106,7 +106,7 @@ There are 13 directives available to you:
 | [`x-transition`](#x-transition) | Directives for applying classes to various stages of an element's transition |
 | [`x-cloak`](#x-cloak) | This attribute is removed when Alpine initializes. Useful for hiding pre-initialized DOM. |
 
-And 6 magic properties:
+And 7 magic properties:
 
 | Magic Properties | Description |
 | --- | --- |
@@ -116,6 +116,7 @@ And 6 magic properties:
 | [`$dispatch`](#dispatch) | Create a `CustomEvent` and dispatch it using `.dispatchEvent()` internally. |
 | [`$nextTick`](#nexttick) | Execute a given expression AFTER Alpine has made its reactive DOM updates. |
 | [`$watch`](#watch) | Will fire a provided callback when a component property you "watched" gets changed. |
+| [`$props`](#props) |
 
 
 ## Sponsors
@@ -589,6 +590,18 @@ You can also use `$dispatch()` to trigger data updates for `x-model` bindings. F
     <button @click="open = ! open">Toggle Open</button>
 </div>
 ```
+
+### `$props`
+**Example:**
+```html
+<div x-data="{ foo: 'bar' }">
+    <div x-data="{}" x-props="{ prop1: foo }">
+        <span x-text="$props.prop1"></span>
+    </div>
+</div>
+```
+
+`$props` is a magic property that allows you to access the props passed by the parent.
 
 You can "watch" a component property with the `$watch` magic method. In the above example, when the button is clicked and `open` is changed, the provided callback will fire and `console.log` the new value.
 

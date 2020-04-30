@@ -13,7 +13,7 @@ export function handleForDirective(component, templateEl, expression, initialUpd
         let iterationScopeVariables = getIterationScopeVariables(iteratorNames, item, index, items, extraVars())
         let currentKey = generateKeyForIteration(component, templateEl, index, iterationScopeVariables)
         let nextEl = currentEl.nextElementSibling
-
+        
         // If there's no previously x-for processed element ahead, add one.
         if (! nextEl || nextEl.__x_for_key === undefined) {
             nextEl = addElementInLoopAfterCurrentEl(templateEl, currentEl)

@@ -12,6 +12,35 @@
             .scale-100 { transform: scale(1); }
             .ease-in { transition-timing-function: cubic-bezier(0.4, 0, 1, 1); }
             .ease-out { transition-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+            .border {
+                border: 1px solid gray;
+            }
+            .border-b-2 {
+                border-bottom: 2px solid gray;
+            }
+            .rounded-sm {
+                border-radius: 3px;
+            }
+            .py-2 {
+                padding-top: 2px;
+                padding-bottom: 2px;
+            }
+            .px-3 {
+                padding-left: 3px;
+                padding-left: 3px;
+            }
+            .flex {
+                display: flex
+            }
+            .flex-col {
+                flex-direction: column;
+            }
+            .justify-start {
+                justify-content: flex-start;
+            }
+            .justify-between {
+                justify-content: space-between;
+            }
         </style>
 
         <script src="/dist/alpine.js" defer></script>
@@ -224,6 +253,57 @@
                 </tr>
 
                 <tr>
+                    <td>Component with Props</td>
+                    <td>
+                        <div
+                            x-data="{stateFromProp1: $props.prop1}"
+                            x-props="{prop1: 'SomeVal'}"
+                        >
+                            <div>
+                                state from prop:&nbsp;
+                                <b><span x-text="stateFromProp1"></span></b>
+                            </div>
+                            <div>
+                                prop:&nbsp;<b
+                                    ><span x-text="$props.prop1"></span
+                                ></b>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Nested Components with Props</td>
+                    <td>
+                        <div x-data="{ foo: { bar: 'baz' } }">
+                            Parent Component: <input type="text" x-model="foo.bar" />
+                            <div
+                                x-data="componentWithProps($props)"
+                                x-props="{prop1: foo.bar}"
+                            >
+                            <p></p>
+                                Nested Component: 
+                                <div>
+                                    &nbsp;Initial prop:
+                                    <span x-text="stateFromProp1"></span>
+                                </div>
+                                <div>
+                                    &nbsp;latest prop:
+                                    <span x-text="$props.prop1"></span>
+                                </div>
+                            </div>
+                            <script>
+                                function componentWithProps(initialProps) {
+                                    return {
+                                        stateFromProp1: initialProps.prop1
+                                    }
+                                }
+                            </script>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
                     <td>x-for</td>
                     <td>
                         <div x-data="{ items: ['foo', 'bar'], foo: 'bar' }">
@@ -301,6 +381,151 @@
                         </div>
                     </td>
                 </tr>
+                
+               
+                <tr>
+                    <td valign='top'>Accordion using prop callbacks</td>
+                    <td valign='top'>
+                        <div style="min-height:300px" class='flex flex-col justify-start' x-data="collapser('top', false)" x-init="init()">
+                            <div class="flex justify-between border-b-2"><div>MENU</div><button x-on:click="toggle()">toggle</button></div>
+                            <div x-bind:style="calcStyle()">
+                                <div x-ref="child">
+                                    <div>
+                                        <div class="border-b-2">&nbsp;ITEM1</div>
+                                        <div x-data="collapser('first', false)" x-init="init()" x-props="{updateParentHeight: updateHeightFromChild.bind($data)}">
+                                            <div class="flex justify-between border-b-2"><div>&nbsp;SUBMENU</div><button x-on:click="toggle()">toggle</button></div>
+                                            <div x-bind:style="calcStyle()">
+                                                <div x-ref="child">
+                                                    <div class="border-b-2">&nbsp;&nbsp;SUBMENU ITEM1</div>
+                                                    <div x-data="collapser('second', false)" x-init="init()" x-props="{updateParentHeight: updateHeightFromChild.bind($data)}">
+                                                        <div class="flex justify-between border-b-2"><div>&nbsp;&nbsp;SUB-SUBMENU_1</div><button x-on:click="toggle()">toggle</button></div>
+                                                        <div x-bind:style="calcStyle()">
+                                                            <div x-ref="child">
+                                                                <div class="border-b-2">
+                                                                    &nbsp;&nbsp;&nbsp;&nbsp;SUB-SUBMENU_1 ITEM1
+                                                                </div>
+                                                                <div class="border-b-2">
+                                                                    &nbsp;&nbsp;&nbsp;&nbsp;SUB-SUBMENU_1 ITEM2
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="border-b-2">&nbsp;&nbsp;SUBMENU ITEM2</div>
+                                                    <div class="border-b-2">&nbsp;&nbsp;SUBMENU ITEM3</div>
+                                                    <div x-data="collapser('third', false)" x-init="init()" x-props="{updateParentHeight: updateHeightFromChild.bind($data)}">
+                                                        <div class="flex justify-between border-b-2"><div>&nbsp;&nbsp;SUB-SUBMENU_2</div><button x-on:click="toggle()">toggle</button></div>
+                                                        <div x-bind:style="calcStyle()">
+                                                            <div x-ref="child">
+                                                                <div class="border-b-2">
+                                                                    &nbsp;&nbsp;&nbsp;&nbsp;SUB-SUBMENU_2 ITEM1
+                                                                </div>
+                                                                <div class="border-b-2">
+                                                                    &nbsp;&nbsp;&nbsp;&nbsp;SUB-SUBMENU_2 ITEM2
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="border-b-2">
+                                        &nbsp;ITEM2
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Dynamic accordion</td>
+                    <td>
+                        <div x-data="{items: [{name:'item1'},{name:'item2'}], includeSubMenu: ['yes'], itemToAdd: ''}">
+                            <div>
+                                <form x-on:click.prevent>
+                                    <input x-model="itemToAdd" placeholder='type to add unique item...' /><br/>
+                                    <label for='includeSubMenu'>Include Sub Menu?</label>
+                                    <input id='includeSubMenu' type="checkbox" x-model="includeSubMenu" value="yes"><br/>
+                                    <button type='submit' class='border rounded-sm py-2 px-3' x-bind:disabled="!itemToAdd" x-on:click="items = [{name: itemToAdd, includeSubMenu: includeSubMenu.length > 0}, ...items]; itemToAdd=''">Add</button>&nbsp;<br/>
+                                </form>
+                            </div>
+                            <template x-for="(item, index) in items" :key="item">
+                                <div>
+                                    <div x-data="collapser($props.rowItem.name, false)" x-init="init()" x-props="{rowItem: item}">
+                                        <div class="flex justify-between border-b-2"><div x-text="$props.rowItem.name"></div><button x-on:click="toggle()">toggle</button></div>
+                                        <div x-bind:style="calcStyle()">
+                                            <div x-ref="child">
+                                                <div class="border-b-2">
+                                                    &nbsp;&nbsp;&nbsp;&nbsp;SUBITEM1
+                                                </div>
+                                                <div class="border-b-2">
+                                                    &nbsp;&nbsp;&nbsp;&nbsp;SUBITEM2
+                                                </div>
+                                                <div x-bind:style="!$props.rowItem.includeSubMenu ? 'display:none': ''">
+                                                    <div x-data="collapser($props.rowItem.name+'_sub', false)" x-init="init()" x-props="{rowItem: $props.rowItem, updateParentHeight: updateHeightFromChild.bind($data)}">
+                                                        <div class="flex justify-between border-b-2"><div>&nbsp;&nbsp;&nbsp;&nbsp;SUBMENU</div><button x-on:click="toggle()">toggle</button></div>
+                                                        <div x-bind:style="calcStyle()">
+                                                            <div x-ref="child">
+                                                                <div class="border-b-2">
+                                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SUBMENU ITEM1
+                                                                </div>
+                                                                <div class="border-b-2">
+                                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SUBMENU ITEM2
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </td>
+                </tr>
+                <script>
+                    const publishedHeights = new Map() // like React's refs
+                    function collapser(name, initialExpanded=true) {
+                        return {
+                            name: name,
+                            version: 1,
+                            shouldTransition: false,
+                            height: 0,
+                            expanded: initialExpanded,
+                            init() {
+                                this.height = this.$refs.child.offsetHeight;
+                                // relies on our *initial height* already being included in parent - do not publish on init,
+                                // but consider it published
+                                // this.publishHeightToParent();
+                                publishedHeights[this.name] = this.height
+                            },
+                            toggle() {
+                                this.expanded = !this.expanded
+                                this.publishHeightToParent()
+                            },
+                            updateHeightFromChild(heightDelta, from) {
+                            //   console.log(this.name, "height delta", `${this.height}+${heightDelta}`)
+                              this.height += heightDelta;
+                              this.publishHeightToParent()
+                            },
+                            publishHeightToParent() {
+                                const publishedHeight = publishedHeights[this.name] || 0;
+                                const newHeightToPublish = this.expanded ? this.height : 0;
+                                // console.log(this.name, "publish ", newHeightToPublish, " was ", publishedHeight)
+                                const func = this.$props && this.$props.updateParentHeight;
+                                if (newHeightToPublish !== publishedHeight) {
+                                    publishedHeight && func && func(-publishedHeight, this.name)
+                                    newHeightToPublish && func && func(newHeightToPublish, this.name)
+                                    publishedHeights[this.name] = newHeightToPublish
+                                }
+                            },
+                            calcStyle() {
+                                return `transition: all 300ms; max-height: ${(this.expanded ? this.height : '0')}px; overflow: hidden`
+                            }
+                        }
+                    }
+                </script>
 
                 <tr>
                     <td>Transitions (with x-if)</td>

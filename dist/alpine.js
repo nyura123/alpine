@@ -1278,19 +1278,35 @@
     return copy;
   }
 
+  function createNewComponentForEl(el, props, seedDataForCloning = null) {
+    el.__x = new Component(el, seedDataForCloning, props);
+  }
+  function evaluateProps(el, parentComponent, extraVars = () => {}) {
+    if (el.hasAttribute("x-props")) {
+      // evaluate props in context of parentComponent if present, otherwise without any context
+      const props = parentComponent ? parentComponent.evaluateReturnExpression(el, el.getAttribute("x-props"), extraVars) : saferEval(el.getAttribute("x-props"), {}
+      /*context*/
+      );
+      return props;
+    }
+
+    return null;
+  }
   class Component {
-    constructor(el, seedDataForCloning = null) {
+    constructor(el, seedDataForCloning = null, props = null) {
       this.$el = el;
       const dataAttr = this.$el.getAttribute('x-data');
       const dataExpression = dataAttr === '' ? '{}' : dataAttr;
       const initExpression = this.$el.getAttribute('x-init');
-      this.unobservedData = seedDataForCloning ? seedDataForCloning : saferEval(dataExpression, {});
+      this.unobservedData = seedDataForCloning ? seedDataForCloning : saferEval(dataExpression, props ? {
+        $props: props
+      } : {});
       // Construct a Proxy-based observable. This will be used to handle reactivity.
 
       let {
         membrane,
         data
-      } = this.wrapDataInObservable(this.unobservedData);
+      } = this.wrapDataInObservable(this.unobservedData, props);
       this.$data = data;
       this.membrane = membrane; // After making user-supplied data methods reactive, we can now add
       // our magic properties to the original data for access.
@@ -1339,8 +1355,20 @@
       return unwrap$1(this.membrane, this.$data);
     }
 
-    wrapDataInObservable(data) {
+    getProps() {
+      return this.$data.$props;
+    }
+
+    setProps(props) {
+      // TODO: performnce optimization to only set $props if any key's val changed
+      if (props) {
+        this.$data.$props = props;
+      }
+    }
+
+    wrapDataInObservable(data, props) {
       var self = this;
+      data.$props = props;
       let updateDom = debounce(function () {
         self.updateElements(self.$el);
       }, 0);
@@ -1375,14 +1403,20 @@
       });
     }
 
-    walkAndSkipNestedComponents(el, callback, initializeComponentCallback = () => {}) {
+    walkAndSkipNestedComponents(el, callback, initializeComponentCallback = () => {}, extraVars = () => {}) {
       walk(el, el => {
         // We've hit a component.
-        if (el.hasAttribute('x-data')) {
+        if (el.hasAttribute('x-data') && !this.shouldSkipForLoopEl(el)) {
           // If it's not the current one.
           if (!el.isSameNode(this.$el)) {
             // Initialize it if it's not.
-            if (!el.__x) initializeComponentCallback(el); // Now we'll let that sub-component deal with itself.
+            if (!el.__x) {
+              initializeComponentCallback(el, evaluateProps(el, this, extraVars));
+            } else {
+              // otherwise, mutate el.$data with new $props to cause child DOM to update
+              el.__x.setProps(evaluateProps(el, this, extraVars));
+            } // Now we'll let that sub-component deal with itself.
+
 
             return false;
           }
@@ -1392,6 +1426,10 @@
       });
     }
 
+    shouldSkipForLoopEl(el) {
+      return el.__x_for_key !== undefined && !el.isSameNode(this.$el);
+    }
+
     initializeElements(rootEl, extraVars = () => {}) {
       this.walkAndSkipNestedComponents(rootEl, el => {
         // Don't touch spawns from for loop
@@ -1399,9 +1437,9 @@
 
         if (el.__x_inserted_me !== undefined) return false;
         this.initializeElement(el, extraVars);
-      }, el => {
-        el.__x = new Component(el);
-      });
+      }, (el, props) => {
+        createNewComponentForEl(el, props);
+      }, extraVars);
       this.executeAndClearRemainingShowDirectiveStack();
       this.executeAndClearNextTickStack(rootEl);
     }
@@ -1420,11 +1458,11 @@
     updateElements(rootEl, extraVars = () => {}) {
       this.walkAndSkipNestedComponents(rootEl, el => {
         // Don't touch spawns from for loop (and check if the root is actually a for loop in a parent, don't skip it.)
-        if (el.__x_for_key !== undefined && !el.isSameNode(this.$el)) return false;
+        if (this.shouldSkipForLoopEl(el)) return false;
         this.updateElement(el, extraVars);
-      }, el => {
-        el.__x = new Component(el);
-      });
+      }, (el, props) => {
+        createNewComponentForEl(el, props);
+      }, extraVars);
       this.executeAndClearRemainingShowDirectiveStack();
       this.executeAndClearNextTickStack(rootEl);
     }
@@ -1592,8 +1630,8 @@
             mutations[i].addedNodes.forEach(node => {
               if (node.nodeType !== 1 || node.__x_inserted_me) return;
 
-              if (node.matches('[x-data]')) {
-                node.__x = new Component(node);
+              if (node.matches('[x-data]') && !this.shouldSkipForLoopEl(node)) {
+                createNewComponentForEl(node, evaluateProps(node, this));
                 return;
               }
 
@@ -1692,12 +1730,16 @@
     },
     initializeComponent: function initializeComponent(el) {
       if (!el.__x) {
-        el.__x = new Component(el);
+        createNewComponentForEl(el, evaluateProps(el, null
+        /*parentComponent*/
+        ));
       }
     },
     clone: function clone(component, newEl) {
       if (!newEl.__x) {
-        newEl.__x = new Component(newEl, component.getUnobservedData());
+        createNewComponentForEl(newEl, component.$el ? evaluateProps(component.$el, null) : null
+        /*props*/
+        , component.getUnobservedData());
       }
     }
   };

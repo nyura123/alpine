@@ -325,6 +325,31 @@ test('can clone an existing component to a new element', async () => {
     expect(document.querySelector('span').innerText).toEqual('bar')
 })
 
+test('can clone an existing component with props to a new element', async () => {
+    global.MutationObserver = class {
+        constructor(callback) {}
+        observe() {}
+    }
+
+    document.body.innerHTML = `
+        <h1 x-data="{ foo: 'bar' }" x-props="{prop1: 'baz'}"></h1>
+
+        <div id="insert-component-here"></div>
+    `
+
+    Alpine.start()
+
+    document.querySelector('#insert-component-here').innerHTML = `
+        <h2 x-data="{ foo: 'foo' }">
+            <span x-text="$props.prop1"></span>
+        </h2>
+    `
+
+    Alpine.clone(document.querySelector('h1').__x, document.querySelector('h2'))
+
+    expect(document.querySelector('span').innerText).toEqual('baz')
+})
+
 test('x-attributes are matched exactly', async () => {
     document.body.innerHTML = `
         <div x-data="{ showElement: false }">

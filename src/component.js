@@ -9,15 +9,35 @@ import { registerModelListener } from './directives/model'
 import { registerListener } from './directives/on'
 import { unwrap, wrap } from './observable'
 
+
+export function createNewComponentForEl(el, props, seedDataForCloning = null) {
+    el.__x = new Component(el, seedDataForCloning, props);
+}
+
+export function evaluateProps(el, parentComponent, extraVars = () => {}) {
+    if (el.hasAttribute("x-props")) {
+        // evaluate props in context of parentComponent if present, otherwise without any context
+        const props = parentComponent
+            ? parentComponent.evaluateReturnExpression(
+                  el,
+                  el.getAttribute("x-props"),
+                  extraVars
+              )
+            : saferEval(el.getAttribute("x-props"), {} /*context*/);
+        return props;
+    }
+    return null;
+}
+
 export default class Component {
-    constructor(el, seedDataForCloning = null) {
+    constructor(el, seedDataForCloning = null, props = null) {
         this.$el = el
 
         const dataAttr = this.$el.getAttribute('x-data')
         const dataExpression = dataAttr === '' ? '{}' : dataAttr
         const initExpression = this.$el.getAttribute('x-init')
 
-        this.unobservedData = seedDataForCloning ? seedDataForCloning : saferEval(dataExpression, {})
+        this.unobservedData = seedDataForCloning ? seedDataForCloning : saferEval(dataExpression, props ? { $props: props } : {})
 
         /* IE11-ONLY:START */
             // For IE11, add our magic properties to the original data for access.
@@ -26,10 +46,11 @@ export default class Component {
             this.unobservedData.$refs = null
             this.unobservedData.$nextTick = null
             this.unobservedData.$watch = null
+            this.unobservedData.$props = null
         /* IE11-ONLY:END */
 
         // Construct a Proxy-based observable. This will be used to handle reactivity.
-        let { membrane, data } = this.wrapDataInObservable(this.unobservedData)
+        let { membrane, data } = this.wrapDataInObservable(this.unobservedData, props)
         this.$data = data
         this.membrane = membrane
 
@@ -81,8 +102,20 @@ export default class Component {
         return unwrap(this.membrane, this.$data)
     }
 
-    wrapDataInObservable(data) {
+    getProps() {
+        return this.$data.$props
+    }
+
+    setProps(props) {
+        // TODO: performnce optimization to only set $props if any key's val changed
+        if (props) {
+            this.$data.$props = props
+        }
+    }
+
+    wrapDataInObservable(data, props) {
         var self = this
+        data.$props = props
 
         let updateDom = debounce(function () {
             self.updateElements(self.$el)
@@ -123,14 +156,22 @@ export default class Component {
         })
     }
 
-    walkAndSkipNestedComponents(el, callback, initializeComponentCallback = () => {}) {
+    walkAndSkipNestedComponents(el, callback, initializeComponentCallback = () => {}, extraVars = () => {}) {
         walk(el, el => {
             // We've hit a component.
-            if (el.hasAttribute('x-data')) {
+            if (el.hasAttribute('x-data') && !this.shouldSkipForLoopEl(el)) {
                 // If it's not the current one.
                 if (! el.isSameNode(this.$el)) {
                     // Initialize it if it's not.
-                    if (! el.__x) initializeComponentCallback(el)
+                    if (!el.__x) {
+                        initializeComponentCallback(
+                            el,
+                            evaluateProps(el, this, extraVars)
+                        )
+                    } else {
+                        // otherwise, mutate el.$data with new $props to cause child DOM to update
+                        el.__x.setProps(evaluateProps(el, this, extraVars))
+                    }
 
                     // Now we'll let that sub-component deal with itself.
                     return false
@@ -139,6 +180,10 @@ export default class Component {
 
             return callback(el)
         })
+    }
+    
+    shouldSkipForLoopEl(el) {
+        return el.__x_for_key !== undefined && !el.isSameNode(this.$el)
     }
 
     initializeElements(rootEl, extraVars = () => {}) {
@@ -150,9 +195,9 @@ export default class Component {
             if (el.__x_inserted_me !== undefined) return false
 
             this.initializeElement(el, extraVars)
-        }, el => {
-            el.__x = new Component(el)
-        })
+        }, (el, props) => {
+            createNewComponentForEl(el, props)
+        }, extraVars)
 
         this.executeAndClearRemainingShowDirectiveStack()
 
@@ -173,12 +218,12 @@ export default class Component {
     updateElements(rootEl, extraVars = () => {}) {
         this.walkAndSkipNestedComponents(rootEl, el => {
             // Don't touch spawns from for loop (and check if the root is actually a for loop in a parent, don't skip it.)
-            if (el.__x_for_key !== undefined && ! el.isSameNode(this.$el)) return false
+            if (this.shouldSkipForLoopEl(el)) return false
 
             this.updateElement(el, extraVars)
-        }, el => {
-            el.__x = new Component(el)
-        })
+        }, (el, props) => {
+            createNewComponentForEl(el, props)
+        }, extraVars)
 
         this.executeAndClearRemainingShowDirectiveStack()
 
@@ -352,8 +397,8 @@ export default class Component {
                     mutations[i].addedNodes.forEach(node => {
                         if (node.nodeType !== 1 || node.__x_inserted_me) return
 
-                        if (node.matches('[x-data]')) {
-                            node.__x = new Component(node)
+                        if (node.matches('[x-data]') && !this.shouldSkipForLoopEl(node)) {
+                            createNewComponentForEl(node, evaluateProps(node, this))
                             return
                         }
 
