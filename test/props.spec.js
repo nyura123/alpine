@@ -146,6 +146,7 @@ test("props work with x-for as direct child added later", async () => {
             expect(document.querySelector("#span_item2").innerText).toEqual(
                 "item2"
             );
+            expect(document.querySelector("#span_item3")).toBe(null);
         })
         
         document.querySelector('button').click()
