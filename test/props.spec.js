@@ -195,3 +195,30 @@ test("props work with x-for as wrapped inside plain element", async () => {
         );
     });
 });
+
+test('components with props inside of loop are reactive', async () => {
+    document.body.innerHTML = `
+        <div x-data="{ items: ['first'], foo: 'bar' }">
+            <button x-on:click="foo = 'bob'"></button>
+            <template x-for="item in items">
+                <div x-data="{foo: $props.fooProp}" x-props="{fooProp: foo}" class="child">
+                    <span id='span_state' x-text="foo"></span>
+                    <span id='span_prop' x-text="$props.fooProp"></span>
+                </div>
+            </template>
+        </div>
+    `
+
+    Alpine.start()
+
+    expect(document.querySelectorAll('div.child').length).toEqual(1)
+    expect(document.querySelector('#span_state').innerText).toEqual('bar')
+    expect(document.querySelector('#span_prop').innerText).toEqual('bar')
+
+    document.querySelector('button').click()
+
+    await wait(() => {
+        expect(document.querySelector('#span_state').innerText).toEqual('bar')
+        expect(document.querySelector('#span_prop').innerText).toEqual('bob')
+    })
+})
