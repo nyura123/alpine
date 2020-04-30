@@ -442,10 +442,12 @@
                     <td>
                         <div x-data="{items: [{name:'item1'},{name:'item2'}], includeSubMenu: ['yes'], itemToAdd: ''}">
                             <div>
-                                <input x-model="itemToAdd" placeholder='type to add unique item...' /><br/>
-                                <label for='includeSubMenu'>Include Sub Menu?</label>
-                                <input id='includeSubMenu' type="checkbox" x-model="includeSubMenu" value="yes"><br/>
-                                <button class='border rounded-sm py-2 px-3' x-bind:disabled="!itemToAdd" x-on:click="items = [{name: itemToAdd, includeSubMenu: includeSubMenu.length > 0}, ...items]; itemToAdd=''">Add</button>&nbsp;<br/>
+                                <form x-on:click.prevent>
+                                    <input x-model="itemToAdd" placeholder='type to add unique item...' /><br/>
+                                    <label for='includeSubMenu'>Include Sub Menu?</label>
+                                    <input id='includeSubMenu' type="checkbox" x-model="includeSubMenu" value="yes"><br/>
+                                    <button type='submit' class='border rounded-sm py-2 px-3' x-bind:disabled="!itemToAdd" x-on:click="items = [{name: itemToAdd, includeSubMenu: includeSubMenu.length > 0}, ...items]; itemToAdd=''">Add</button>&nbsp;<br/>
+                                </form>
                             </div>
                             <template x-for="(item, index) in items" :key="item">
                                 <div>

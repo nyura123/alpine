@@ -332,7 +332,7 @@ test('can clone an existing component with props to a new element', async () => 
     }
 
     document.body.innerHTML = `
-        <h1 x-data="{ foo: 'bar' }" x-props="{prop1: 'baz'}">HUHUHUHUH</h1>
+        <h1 x-data="{ foo: 'bar' }" x-props="{prop1: 'baz'}"></h1>
 
         <div id="insert-component-here"></div>
     `

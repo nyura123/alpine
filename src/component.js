@@ -14,14 +14,14 @@ export function createNewComponentForEl(el, props, seedDataForCloning = null) {
     el.__x = new Component(el, seedDataForCloning, props);
 }
 
-export function evaluateProps(el, parentComponent) {
+export function evaluateProps(el, parentComponent, extraVars = () => {}) {
     if (el.hasAttribute("x-props")) {
         // evaluate props in context of parentComponent if present, otherwise without any context
         const props = parentComponent
             ? parentComponent.evaluateReturnExpression(
                   el,
                   el.getAttribute("x-props"),
-                  () => parentComponent.__x_extra_scope
+                  extraVars
               )
             : saferEval(el.getAttribute("x-props"), {} /*context*/);
         return props;
@@ -156,7 +156,7 @@ export default class Component {
         })
     }
 
-    walkAndSkipNestedComponents(el, callback, initializeComponentCallback = () => {}) {
+    walkAndSkipNestedComponents(el, callback, initializeComponentCallback = () => {}, extraVars = () => {}) {
         walk(el, el => {
             // We've hit a component.
             if (el.hasAttribute('x-data') && !this.shouldSkipForLoopEl(el)) {
@@ -166,11 +166,11 @@ export default class Component {
                     if (!el.__x) {
                         initializeComponentCallback(
                             el,
-                            evaluateProps(el, this)
+                            evaluateProps(el, this, extraVars)
                         )
                     } else {
                         // otherwise, mutate el.$data with new $props to cause child DOM to update
-                        el.__x.setProps(evaluateProps(el, this))
+                        el.__x.setProps(evaluateProps(el, this, extraVars))
                     }
 
                     // Now we'll let that sub-component deal with itself.
@@ -197,7 +197,7 @@ export default class Component {
             this.initializeElement(el, extraVars)
         }, (el, props) => {
             createNewComponentForEl(el, props)
-        })
+        }, extraVars)
 
         this.executeAndClearRemainingShowDirectiveStack()
 
@@ -223,7 +223,7 @@ export default class Component {
             this.updateElement(el, extraVars)
         }, (el, props) => {
             createNewComponentForEl(el, props)
-        })
+        }, extraVars)
 
         this.executeAndClearRemainingShowDirectiveStack()
 
