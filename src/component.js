@@ -14,14 +14,14 @@ export function createNewComponentForEl(el, props, seedDataForCloning = null) {
     el.__x = new Component(el, seedDataForCloning, props);
 }
 
-export function evaluateProps(el, parentComponent, extraVars = () => {}) {
+export function evaluateProps(el, parentComponent) {
     if (el.hasAttribute("x-props")) {
         // evaluate props in context of parentComponent if present, otherwise without any context
         const props = parentComponent
             ? parentComponent.evaluateReturnExpression(
                   el,
                   el.getAttribute("x-props"),
-                  extraVars
+                  () => parentComponent.__x_extra_scope
               )
             : saferEval(el.getAttribute("x-props"), {} /*context*/);
         return props;

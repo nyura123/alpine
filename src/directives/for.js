@@ -7,12 +7,19 @@ export function handleForDirective(component, templateEl, expression, initialUpd
 
     let items = evaluateItemsAndReturnEmptyIfXIfIsPresentAndFalseOnElement(component, templateEl, iteratorNames, extraVars)
 
+    const prevScope = component.__x_extra_scope;
+
     // As we walk the array, we'll also walk the DOM (updating/creating as we go).
     let currentEl = templateEl
     items.forEach((item, index) => {
         let iterationScopeVariables = getIterationScopeVariables(iteratorNames, item, index, items, extraVars())
         let currentKey = generateKeyForIteration(component, templateEl, index, iterationScopeVariables)
         let nextEl = currentEl.nextElementSibling
+        
+        // for x-props -- add extra scope for evaluating props.
+        // adding here instead of via extraVars because of multiple paths to get to evaluateVars:
+        //  from reactivity of $data, from Mutation observer, from calling initializeElements/updateElements explicitly below
+        component.__x_extra_scope = {prevScope, ...iterationScopeVariables}
 
         // If there's no previously x-for processed element ahead, add one.
         if (! nextEl || nextEl.__x_for_key === undefined) {
@@ -41,6 +48,8 @@ export function handleForDirective(component, templateEl, expression, initialUpd
         currentEl = nextEl
         currentEl.__x_for_key = currentKey
     })
+
+    component.__x_extra_scope = prevScope
 
     removeAnyLeftOverElementsFromPreviousUpdate(currentEl)
 }

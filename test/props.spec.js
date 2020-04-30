@@ -96,3 +96,30 @@ test('child component supports multiple levels of nesting with explicit props', 
         expect(document.querySelector('span').innerText).toEqual('baz')
     })
 })
+
+
+test("props work with x-for", async () => {
+    document.body.innerHTML = `
+     <div x-data="{items: ['item1', 'item2']}">
+       <div>WEIRD</div>
+       <template x-for="(item, index) in items" :key="item">
+         <div>
+            <div x-data="{hello:'world'}" x-props="{item: item}">
+                <span x-bind:id="'span_'+$props.item" x-text="$props.item"></span>
+            </div>
+          </div>
+        </template>
+     </div>
+    `;
+
+    Alpine.start();
+
+    await wait(() => {
+        expect(document.querySelector("#span_item1").innerText).toEqual(
+            "item1"
+        );
+        expect(document.querySelector("#span_item2").innerText).toEqual(
+            "item2"
+        );
+    });
+});
