@@ -466,7 +466,7 @@ test("x-for x-target nested x-for", async () => {
     expect(document.querySelectorAll("ul li h2")[2].innerText).toEqual("law");
 });
 
-// TODO this doesn't yet work
+
 test("x-for x-target nested x-target", async () => {
     document.body.innerHTML = `
         <div id='huh' x-data="{ foos: [ {bars: ['bob', 'lob']} ] }">
